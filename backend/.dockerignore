@@ -3,6 +3,5 @@ __pycache__/
 .venv/
 venv/
 .env
-tickets/tests/
 Dockerfile
 .dockerignore

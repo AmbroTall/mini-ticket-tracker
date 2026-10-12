@@ -8,13 +8,50 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5432:5432" # loopback only, for running the backend outside Docker
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 10
     restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment: &backend-env
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-insecure-compose-demo-key-change-me}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-0}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB:-tickets}
+      POSTGRES_USER: ${POSTGRES_USER:-tickets}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tickets}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  # docker compose --profile test run --rm backend-tests
+  backend-tests:
+    build: ./backend
+    profiles: ["test"]
+    entrypoint: ["python", "manage.py", "test"]
+    environment: *backend-env
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   pgdata:
