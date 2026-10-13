@@ -13,6 +13,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [pendingId, setPendingId] = useState(null);
+  const [notice, setNotice] = useState("");
   const [version, setVersion] = useState(0); // bump to refetch after a mutation
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export default function App() {
     await createTicket(payload); // errors surface in the form
     setFilter("");
     setPage(1);
+    setNotice("Ticket created successfully.");
     refresh();
   }
 
@@ -61,6 +63,7 @@ export default function App() {
     setPendingId(id);
     try {
       await updateTicket(id, changes);
+      setNotice("Ticket updated successfully.");
       refresh();
     } catch (err) {
       setError(err.message);
@@ -106,11 +109,21 @@ export default function App() {
         <TicketForm onCreate={handleCreate} />
 
         <section className="queue" aria-busy={loading}>
+          {notice && <p className="notice" role="status">{notice}</p>}
           {error && (
             <p className="error banner" role="alert">
               {error}
             </p>
           )}
+          <div className="queue-heading">
+            <h2>Tickets</h2>
+            <div className="priority-legend" aria-label="Priority legend">
+              <span><i className="legend-dot high" /> High</span>
+              <span><i className="legend-dot medium" /> Medium</span>
+              <span><i className="legend-dot low" /> Low</span>
+            </div>
+          </div>
+
           {loading && data.results.length === 0 && !error ? (
             <p className="empty">Loading tickets…</p>
           ) : (
